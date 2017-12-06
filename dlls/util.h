@@ -547,3 +547,6 @@ int UTIL_SharedRandomLong( unsigned int seed, int low, int high );
 float UTIL_SharedRandomFloat( unsigned int seed, float low, float high );
 
 float UTIL_WeaponTimeBase( void );
+
+Vector UTIL_BulletSpread(const Vector &vecDirShooting, const Vector &vecSpread, float bias = 1.0f);
+Vector UTIL_BulletSpread(const Vector &vecDirShooting, const Vector &vecSpread, Vector &vecResult, int seed, int shotNum, float bias = 1.0f);

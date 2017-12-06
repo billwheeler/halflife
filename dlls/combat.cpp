@@ -1399,8 +1399,6 @@ void CBaseEntity::FireBullets(ULONG cShots, Vector vecSrc, Vector vecDirShooting
 	static int tracerCount;
 	int tracer;
 	TraceResult tr;
-	Vector vecRight = gpGlobals->v_right;
-	Vector vecUp = gpGlobals->v_up;
 
 	if ( pevAttacker == NULL )
 		pevAttacker = pev;  // the default attacker is ourselves
@@ -1410,17 +1408,7 @@ void CBaseEntity::FireBullets(ULONG cShots, Vector vecSrc, Vector vecDirShooting
 
 	for (ULONG iShot = 1; iShot <= cShots; iShot++)
 	{
-		// get circular gaussian spread
-		float x, y, z;
-		do {
-			x = RANDOM_FLOAT(-0.5,0.5) + RANDOM_FLOAT(-0.5,0.5);
-			y = RANDOM_FLOAT(-0.5,0.5) + RANDOM_FLOAT(-0.5,0.5);
-			z = x*x+y*y;
-		} while (z > 1);
-
-		Vector vecDir = vecDirShooting +
-						x * vecSpread.x * vecRight +
-						y * vecSpread.y * vecUp;
+		Vector vecDir = UTIL_BulletSpread(vecDirShooting, vecSpread, 0.75f);
 		Vector vecEnd;
 
 		vecEnd = vecSrc + vecDir * flDistance;
@@ -1536,9 +1524,6 @@ Vector CBaseEntity::FireBulletsPlayer ( ULONG cShots, Vector vecSrc, Vector vecD
 
 	static int tracerCount;
 	TraceResult tr;
-	Vector vecRight = gpGlobals->v_right;
-	Vector vecUp = gpGlobals->v_up;
-	float x, y, z;
 
 	if ( pevAttacker == NULL )
 		pevAttacker = pev;  // the default attacker is ourselves
@@ -1546,15 +1531,19 @@ Vector CBaseEntity::FireBulletsPlayer ( ULONG cShots, Vector vecSrc, Vector vecD
 	ClearMultiDamage();
 	gMultiDamage.type = DMG_BULLET | DMG_NEVERGIB;
 
+	Vector vecResult = Vector();
+
 	for ( ULONG iShot = 1; iShot <= cShots; iShot++ )
 	{
-		//Use player's random seed.
-		// get circular gaussian spread
-		x = UTIL_SharedRandomFloat( shared_rand + iShot, -0.5, 0.5 ) + UTIL_SharedRandomFloat( shared_rand + ( 1 + iShot ) , -0.5, 0.5 );
-		y = UTIL_SharedRandomFloat( shared_rand + ( 2 + iShot ), -0.5, 0.5 ) + UTIL_SharedRandomFloat( shared_rand + ( 3 + iShot ), -0.5, 0.5 );
-		z = x * x + y * y;
+		Vector spread = vecSpread;
+		float bias = 1.0f;
+		if (iBulletType == BULLET_PLAYER_BUCKSHOT && iShot == 1) // with buckshot, the first pellet is always accurate
+		{
+			spread = Vector(0.0f, 0.0f, 0.0f);
+			bias = 1.0f;
+		}
 
-		Vector vecDir = vecDirShooting + (x * vecSpread.x * vecRight) + (y * vecSpread.y * vecUp);
+		Vector vecDir = UTIL_BulletSpread(vecDirShooting, spread, vecResult, shared_rand, iShot, 1.0f);
 		Vector vecEnd;
 
 		vecEnd = vecSrc + vecDir * flDistance;
@@ -1609,7 +1598,7 @@ Vector CBaseEntity::FireBulletsPlayer ( ULONG cShots, Vector vecSrc, Vector vecD
 	}
 	ApplyMultiDamage(pev, pevAttacker);
 
-	return Vector( x * vecSpread.x, y * vecSpread.y, 0.0 );
+	return vecResult;
 }
 
 void CBaseEntity :: TraceBleed( float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType )

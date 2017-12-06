@@ -1646,6 +1646,36 @@ void UTIL_StripToken( const char *pKey, char *pDest )
 	pDest[i] = 0;
 }
 
+Vector UTIL_BulletSpread(const Vector &vecDirShooting, const Vector &vecSpread, float bias)
+{
+	// get circular gaussian spread
+	float x, y, z;
+
+	do {
+		x = RANDOM_FLOAT(-0.5,0.5) + RANDOM_FLOAT(-0.5,0.5);
+		y = RANDOM_FLOAT(-0.5,0.5) + RANDOM_FLOAT(-0.5,0.5);
+		z = x*x+y*y;
+	} while (z > 1);
+
+	return vecDirShooting +
+		x * vecSpread.x * gpGlobals->v_right +
+		y * vecSpread.y * gpGlobals->v_up;
+}
+
+Vector UTIL_BulletSpread(const Vector &vecDirShooting, const Vector &vecSpread, Vector &vecResult, int seed, int shotNum, float bias)
+{
+	// get circular gaussian spread
+	float x, y, z;
+
+	x = UTIL_SharedRandomFloat( seed + shotNum, -0.5, 0.5 ) + UTIL_SharedRandomFloat( seed + ( 1 + shotNum ) , -0.5, 0.5 );
+	y = UTIL_SharedRandomFloat( seed + ( 2 + shotNum ), -0.5, 0.5 ) + UTIL_SharedRandomFloat( seed + ( 3 + shotNum ), -0.5, 0.5 );
+	z = x * x + y * y;
+
+	vecResult = Vector( x * vecSpread.x, y * vecSpread.y, 0.0 );
+
+	return vecDirShooting + (x * vecSpread.x * gpGlobals->v_right) + (y * vecSpread.y * gpGlobals->v_up);
+}
+
 
 // --------------------------------------------------------------
 //
