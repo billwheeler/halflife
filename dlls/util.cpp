@@ -1651,9 +1651,28 @@ Vector UTIL_BulletSpread(const Vector &vecDirShooting, const Vector &vecSpread, 
 	// get circular gaussian spread
 	float x, y, z;
 
-	do {
-		x = RANDOM_FLOAT(-0.5,0.5) + RANDOM_FLOAT(-0.5,0.5);
-		y = RANDOM_FLOAT(-0.5,0.5) + RANDOM_FLOAT(-0.5,0.5);
+	float shotBiasMin = -1.0f;
+	float shotBiasMax = 1.0f;
+
+	if ( bias > shotBiasMax )
+		bias = shotBiasMax;
+	else if ( bias < shotBiasMin )
+		bias = shotBiasMin;
+
+	// 1.0 gaussian, 0.0 is flat, -1.0 is inverse gaussian
+	float shotBias = ( ( shotBiasMax - shotBiasMin ) * bias ) + shotBiasMin;
+
+	float flatness = ( fabsf(bias) * 0.5 );
+
+	do
+	{
+		x = RANDOM_FLOAT(-1,1) * flatness + RANDOM_FLOAT(-1,1) * (1 - flatness);
+		y = RANDOM_FLOAT(-1,1) * flatness + RANDOM_FLOAT(-1,1) * (1 - flatness);
+		if ( bias < 0 )
+		{
+			x = ( x >= 0 ) ? 1.0 - x : -1.0 - x;
+			y = ( y >= 0 ) ? 1.0 - y : -1.0 - y;
+		}
 		z = x*x+y*y;
 	} while (z > 1);
 
@@ -1667,8 +1686,27 @@ Vector UTIL_BulletSpread(const Vector &vecDirShooting, const Vector &vecSpread, 
 	// get circular gaussian spread
 	float x, y, z;
 
-	x = UTIL_SharedRandomFloat( seed + shotNum, -0.5, 0.5 ) + UTIL_SharedRandomFloat( seed + ( 1 + shotNum ) , -0.5, 0.5 );
-	y = UTIL_SharedRandomFloat( seed + ( 2 + shotNum ), -0.5, 0.5 ) + UTIL_SharedRandomFloat( seed + ( 3 + shotNum ), -0.5, 0.5 );
+	float shotBiasMin = -1.0f;
+	float shotBiasMax = 1.0f;
+
+	if ( bias > shotBiasMax )
+		bias = shotBiasMax;
+	else if ( bias < shotBiasMin )
+		bias = shotBiasMin;
+
+	// 1.0 gaussian, 0.0 is flat, -1.0 is inverse gaussian
+	float shotBias = ( ( shotBiasMax - shotBiasMin ) * bias ) + shotBiasMin;
+
+	float flatness = ( fabsf(bias) * 0.5 );
+
+	x = UTIL_SharedRandomFloat( seed + shotNum, -0.5, 0.5 ) * flatness + UTIL_SharedRandomFloat( seed + ( 1 + shotNum ) , -0.5, 0.5 ) * (1 - flatness);
+	y = UTIL_SharedRandomFloat( seed + ( 2 + shotNum ), -0.5, 0.5 ) * flatness + UTIL_SharedRandomFloat( seed + ( 3 + shotNum ), -0.5, 0.5 ) * (1 - flatness);
+	if ( bias < 0 )
+	{
+		x = ( x >= 0 ) ? 1.0 - x : -1.0 - x;
+		y = ( y >= 0 ) ? 1.0 - y : -1.0 - y;
+	}
+
 	z = x * x + y * y;
 
 	vecResult = Vector( x * vecSpread.x, y * vecSpread.y, 0.0 );

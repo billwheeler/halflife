@@ -1408,7 +1408,7 @@ void CBaseEntity::FireBullets(ULONG cShots, Vector vecSrc, Vector vecDirShooting
 
 	for (ULONG iShot = 1; iShot <= cShots; iShot++)
 	{
-		Vector vecDir = UTIL_BulletSpread(vecDirShooting, vecSpread, 0.75f);
+		Vector vecDir = UTIL_BulletSpread(vecDirShooting, vecSpread, 1.0f);
 		Vector vecEnd;
 
 		vecEnd = vecSrc + vecDir * flDistance;
@@ -1537,7 +1537,7 @@ Vector CBaseEntity::FireBulletsPlayer ( ULONG cShots, Vector vecSrc, Vector vecD
 	{
 		Vector spread = vecSpread;
 		float bias = 1.0f;
-		if (iBulletType == BULLET_PLAYER_BUCKSHOT && iShot == 1) // with buckshot, the first pellet is always accurate
+		if (iBulletType == BULLET_PLAYER_BUCKSHOT && iShot % 3) // with buckshot, a third of the pellets are always accurate
 		{
 			spread = Vector(0.0f, 0.0f, 0.0f);
 			bias = 1.0f;
