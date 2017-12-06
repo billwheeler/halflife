@@ -2333,6 +2333,8 @@ void CBasePlayer::CheckSuitUpdate()
 
 void CBasePlayer::SetSuitUpdate(char *name, int fgroup, int iNoRepeatTime)
 {
+#ifndef BLUE_SHIFT
+
 	int i;
 	int isentence;
 	int iempty = -1;
@@ -2422,6 +2424,7 @@ void CBasePlayer::SetSuitUpdate(char *name, int fgroup, int iNoRepeatTime)
 			m_flSuitUpdate = gpGlobals->time + SUITUPDATETIME; 
 	}
 
+#endif
 }
 
 /*
@@ -4007,7 +4010,6 @@ void CBasePlayer :: UpdateClientData( void )
 
 	if (pev->health != m_iClientHealth)
 	{
-#define clamp( val, min, max ) ( ((val) > (max)) ? (max) : ( ((val) < (min)) ? (min) : (val) ) )
 		int iHealth = clamp( pev->health, 0, 255 );  // make sure that no negative health values are sent
 		if ( pev->health > 0.0f && pev->health <= 1.0f )
 			iHealth = 1;

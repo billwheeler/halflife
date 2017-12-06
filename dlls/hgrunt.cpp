@@ -49,10 +49,11 @@ extern DLL_GLOBAL int		g_iSkillLevel;
 //=========================================================
 // monster-specific DEFINE's
 //=========================================================
-#define	GRUNT_CLIP_SIZE					36 // how many bullets in a clip? - NOTE: 3 round burst sound, so keep as 3 * x!
+#define	GRUNT_CLIP_SIZE					MP5_MAX_CLIP	// how many bullets in a clip? - NOTE: 3 round burst sound, so keep as 3 * x!
 #define GRUNT_VOL						0.35		// volume of grunt sounds
 #define GRUNT_ATTN						ATTN_NORM	// attenutation of grunt sentences
-#define HGRUNT_LIMP_HEALTH				20
+//#define HGRUNT_LIMP_HEALTH				20
+#define HGRUNT_LIMP_HEALTH				0
 #define HGRUNT_DMG_HEADSHOT				( DMG_BULLET | DMG_CLUB )	// damage types that can kill a grunt with a single headshot.
 #define HGRUNT_NUM_HEADS				2 // how many grunt heads are there? 
 #define HGRUNT_MINIMUM_HEADSHOT_DAMAGE	15 // must do at least this much damage in one shot to head to score a headshot kill
@@ -443,7 +444,7 @@ BOOL CHGrunt :: CheckMeleeAttack1 ( float flDot, float flDist )
 //=========================================================
 BOOL CHGrunt :: CheckRangeAttack1 ( float flDot, float flDist )
 {
-	if ( !HasConditions( bits_COND_ENEMY_OCCLUDED ) && flDist <= 2048 && flDot >= 0.5 && NoFriendlyFire() )
+	if ( !HasConditions( bits_COND_ENEMY_OCCLUDED ) && flDist <= 12800 && flDot >= 0.5 && NoFriendlyFire() )
 	{
 		TraceResult	tr;
 
@@ -603,6 +604,15 @@ BOOL CHGrunt :: CheckRangeAttack2 ( float flDot, float flDist )
 //=========================================================
 void CHGrunt :: TraceAttack( entvars_t *pevAttacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType)
 {
+	if ( FClassnameIs( pevAttacker, "monster_barney" ) )
+	{
+        if( ptr->iHitgroup == HITGROUP_CHEST || ptr->iHitgroup == HITGROUP_STOMACH )
+	        UTIL_Ricochet( ptr->vecEndPos, 1.0 );
+	    else if( GetBodygroup( 1 ) == HEAD_GRUNT )
+	        UTIL_Ricochet( ptr->vecEndPos, 1.0 );
+		flDamage = 0.01;
+	}
+
 	// check for helmet shot
 	if (ptr->iHitgroup == 11)
 	{
@@ -796,13 +806,25 @@ void CHGrunt :: Shoot ( void )
 
 	UTIL_MakeVectors ( pev->angles );
 
-	Vector	vecShellVelocity = gpGlobals->v_right * RANDOM_FLOAT(40,90) + gpGlobals->v_up * RANDOM_FLOAT(75,200) + gpGlobals->v_forward * RANDOM_FLOAT(-40, 40);
-	EjectBrass ( vecShootOrigin - vecShootDir * 24, vecShellVelocity, pev->angles.y, m_iBrassShell, TE_BOUNCE_SHELL); 
-	FireBullets(1, vecShootOrigin, vecShootDir, VECTOR_CONE_10DEGREES, 2048, BULLET_MONSTER_MP5 ); // shoot +-5 degrees
+	Vector vecShellVelocity = gpGlobals->v_right * RANDOM_FLOAT(40,90) + gpGlobals->v_up * RANDOM_FLOAT(75,200) + gpGlobals->v_forward * RANDOM_FLOAT(-40, 40);	
+	EjectBrass( vecShootOrigin - vecShootDir * 24, vecShellVelocity, pev->angles.y, m_iBrassShell, TE_BOUNCE_SHELL ); 
+
+	CBaseEntity *pEnemy = m_hEnemy;
+    if (pEnemy && pEnemy->IsPlayer())
+    {
+        Vector vecEnemyPos = pEnemy->pev->origin;
+		float flSpread = RemapValClamped( (vecEnemyPos - pev->origin).Length(), 1024, 10240, VECTOR_CONE_10DEGREES.x, VECTOR_CONE_5DEGREES.x );
+	    FireBullets( 1, vecShootOrigin, vecShootDir, Vector( flSpread, flSpread, flSpread ), 12800, BULLET_MONSTER_MP5 );
+	}
+	else
+	{
+	    FireBullets( 1, vecShootOrigin, vecShootDir, VECTOR_CONE_5DEGREES, 12800, BULLET_MONSTER_MP5 );
+	}
+
 
 	pev->effects |= EF_MUZZLEFLASH;
 	
-	m_cAmmoLoaded--;// take away a bullet!
+	m_cAmmoLoaded--;	// take away a bullet!
 
 	Vector angDir = UTIL_VecToAngles( vecShootDir );
 	SetBlending( 0, angDir.x );
@@ -822,10 +844,25 @@ void CHGrunt :: Shotgun ( void )
 	Vector vecShootDir = ShootAtEnemy( vecShootOrigin );
 
 	UTIL_MakeVectors ( pev->angles );
-
+  
 	Vector	vecShellVelocity = gpGlobals->v_right * RANDOM_FLOAT(40,90) + gpGlobals->v_up * RANDOM_FLOAT(75,200) + gpGlobals->v_forward * RANDOM_FLOAT(-40, 40);
 	EjectBrass ( vecShootOrigin - vecShootDir * 24, vecShellVelocity, pev->angles.y, m_iShotgunShell, TE_BOUNCE_SHOTSHELL); 
-	FireBullets(gSkillData.hgruntShotgunPellets, vecShootOrigin, vecShootDir, VECTOR_CONE_15DEGREES, 2048, BULLET_PLAYER_BUCKSHOT, 0 ); // shoot +-7.5 degrees
+
+	switch( g_iSkillLevel )
+	{
+		case SKILL_HARD:
+			FireBullets( gSkillData.hgruntShotgunPellets, vecShootOrigin, vecShootDir, VECTOR_CONE_7DEGREES, 2048, BULLET_PLAYER_BUCKSHOT, 0 );
+			break;
+
+		case SKILL_MEDIUM:
+			FireBullets( gSkillData.hgruntShotgunPellets, vecShootOrigin, vecShootDir, VECTOR_CONE_10DEGREES, 2048, BULLET_PLAYER_BUCKSHOT, 0 );
+			break;
+
+		case SKILL_EASY:
+			FireBullets( gSkillData.hgruntShotgunPellets, vecShootOrigin, vecShootDir, VECTOR_CONE_15DEGREES, 2048, BULLET_PLAYER_BUCKSHOT, 0 );
+			break;
+	}
+
 
 	pev->effects |= EF_MUZZLEFLASH;
 	
@@ -1038,6 +1075,9 @@ void CHGrunt :: Spawn()
 	CTalkMonster::g_talkWaitTime = 0;
 
 	MonsterInit();
+
+	m_flDistTooFar		= 9728.0;
+	m_flDistLook		= 12800.0;
 }
 
 //=========================================================
@@ -1069,10 +1109,7 @@ void CHGrunt :: Precache()
 	PRECACHE_SOUND("zombie/claw_miss2.wav");// because we use the basemonster SWIPE animation event
 
 	// get voice pitch
-	if (RANDOM_LONG(0,1))
-		m_voicePitch = 109 + RANDOM_LONG(0,7);
-	else
-		m_voicePitch = 100;
+	m_voicePitch = 109 + RANDOM_LONG(0,7);
 
 	m_iBrassShell = PRECACHE_MODEL ("models/shell.mdl");// brass shell
 	m_iShotgunShell = PRECACHE_MODEL ("models/shotgunshell.mdl");

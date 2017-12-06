@@ -107,7 +107,7 @@ public:
 
 	CUSTOM_SCHEDULES;
 
-private:	
+protected:	
 	float m_painTime;
 	float m_healTime;
 	float m_fearTime;
@@ -1426,3 +1426,221 @@ int CSittingScientist :: FIdleSpeak ( void )
 	CTalkMonster::g_talkWaitTime = 0;
 	return FALSE;
 }
+
+#ifdef BLUE_SHIFT
+
+//=========================================================
+// Dr. (Stanley?) Rosenberg
+//=========================================================
+
+class CRosenberg : public CScientist
+{
+public:
+	void Spawn( void );
+	void Precache( void );
+
+	void TalkInit( void );
+	int TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamageType);
+
+	void PainSound( void );
+	MONSTERSTATE GetIdealState( void );
+};
+
+LINK_ENTITY_TO_CLASS( monster_rosenberg, CRosenberg );
+
+
+//=========================================================
+// Spawn
+//=========================================================
+void CRosenberg :: Spawn( void )
+{
+	Precache( );
+
+	SET_MODEL(ENT(pev), "models/scientist.mdl");
+	UTIL_SetSize(pev, VEC_HUMAN_HULL_MIN, VEC_HUMAN_HULL_MAX);
+
+	pev->solid			= SOLID_SLIDEBOX;
+	pev->movetype		= MOVETYPE_STEP;
+	m_bloodColor		= BLOOD_COLOR_RED;
+	pev->health			= gSkillData.rosenbergHealth;
+	pev->view_ofs		= Vector ( 0, 0, 50 );// position of the eyes relative to monster's origin.
+	m_flFieldOfView		= VIEW_FIELD_WIDE; // NOTE: we need a wide field of view so scientists will notice player and say hello
+	m_MonsterState		= MONSTERSTATE_NONE;
+
+//	m_flDistTooFar		= 256.0;
+
+	m_afCapability		= bits_CAP_HEAR | bits_CAP_TURN_HEAD | bits_CAP_OPEN_DOORS | bits_CAP_AUTO_DOORS | bits_CAP_USE;
+
+	// White hands
+	pev->skin = 0;
+
+	if ( pev->body == -1 )
+	{// -1 chooses a random head
+		pev->body = RANDOM_LONG(0, NUM_SCIENTIST_HEADS-1);// pick a head, any head
+	}
+
+	// Luther is black, make his hands black
+	if ( pev->body == HEAD_LUTHER )
+		pev->skin = 1;
+	
+	MonsterInit();
+	SetUse( FollowerUse );
+}
+
+//=========================================================
+// Precache - precaches all resources this monster needs
+//=========================================================
+void CRosenberg :: Precache( void )
+{
+	PRECACHE_MODEL("models/scientist.mdl");
+	PRECACHE_SOUND("rosenberg/ro_pain1.wav");
+	PRECACHE_SOUND("rosenberg/ro_pain2.wav");
+	PRECACHE_SOUND("rosenberg/ro_pain3.wav");
+	PRECACHE_SOUND("rosenberg/ro_pain4.wav");
+	PRECACHE_SOUND("rosenberg/ro_pain5.wav");
+	PRECACHE_SOUND("rosenberg/ro_pain6.wav");
+	PRECACHE_SOUND("rosenberg/ro_pain7.wav");
+	PRECACHE_SOUND("rosenberg/ro_pain8.wav");
+
+	// every new scientist must call this, otherwise
+	// when a level is loaded, nobody will talk (time is reset to 0)
+	TalkInit();
+
+	CTalkMonster::Precache();
+}
+
+
+// Init talk data
+void CRosenberg :: TalkInit()
+{
+	
+	CTalkMonster::TalkInit();
+
+	// scientist will try to talk to friends in this order:
+
+	m_szFriends[0] = "monster_scientist";
+	m_szFriends[1] = "monster_sitting_scientist";
+	m_szFriends[2] = "monster_barney";
+
+	// scientists speach group names (group names are in sentences.txt)
+
+	m_szGrp[TLK_ANSWER]  =	"RO_ANSWER";
+	m_szGrp[TLK_QUESTION] =	"RO_QUESTION";
+	m_szGrp[TLK_IDLE] =		"RO_IDLE";
+	m_szGrp[TLK_STARE] =	"RO_STARE";
+	m_szGrp[TLK_USE] =		"RO_OK";
+	m_szGrp[TLK_UNUSE] =	"RO_WAIT";
+	m_szGrp[TLK_STOP] =		"RO_STOP";
+	m_szGrp[TLK_NOSHOOT] =	"RO_SCARED";
+	m_szGrp[TLK_HELLO] =	"RO_HELLO";
+
+	m_szGrp[TLK_PLHURT1] =	"!RO_CUREA";
+	m_szGrp[TLK_PLHURT2] =	"!RO_CUREB"; 
+	m_szGrp[TLK_PLHURT3] =	"!RO_CUREC";
+
+	m_szGrp[TLK_PHELLO] =	"RO_PHELLO";
+	m_szGrp[TLK_PIDLE] =	"RO_PIDLE";
+	m_szGrp[TLK_PQUESTION] = "RO_PQUEST";
+	m_szGrp[TLK_SMELL] =	"RO_SMELL";
+	
+	m_szGrp[TLK_WOUND] =	"RO_WOUND";
+	m_szGrp[TLK_MORTAL] =	"RO_MORTAL";
+
+	// get voice for head
+	switch (pev->body % 3)
+	{
+	default:
+	case HEAD_GLASSES:	m_voicePitch = 105; break;	//glasses
+	case HEAD_EINSTEIN: m_voicePitch = 100; break;	//einstein
+	case HEAD_LUTHER:	m_voicePitch = 95;  break;	//luther
+	case HEAD_SLICK:	m_voicePitch = 100;  break;//slick
+	}
+}
+
+int CRosenberg :: TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamageType)
+{
+	// make sure friends talk about it if player hurts scientist...
+	return CTalkMonster::TakeDamage(pevInflictor, pevAttacker, flDamage, bitsDamageType);
+}
+
+//=========================================================
+// PainSound
+//=========================================================
+void CRosenberg :: PainSound ( void )
+{
+	if ( gpGlobals->time < m_painTime )
+		return;
+	
+	m_painTime = gpGlobals->time + RANDOM_FLOAT(0.5, 0.75);
+
+	switch (RANDOM_LONG(0,4))
+	{
+	case 0: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain0.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	case 1: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain1.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	case 2: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain2.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	case 3: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain3.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	case 4: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain4.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	case 5: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain5.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	case 6: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain6.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	case 7: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain7.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	case 8: EMIT_SOUND_DYN( ENT(pev), CHAN_VOICE, "rosenberg/ro_pain8.wav", 1, ATTN_NORM, 0, GetVoicePitch()); break;
+	}
+}
+
+MONSTERSTATE CRosenberg :: GetIdealState ( void )
+{
+	switch ( m_MonsterState )
+	{
+	case MONSTERSTATE_ALERT:
+	case MONSTERSTATE_IDLE:
+		if ( HasConditions( bits_COND_NEW_ENEMY ) )
+		{
+			if ( IsFollowing() )
+			{
+				int relationship = IRelationship( m_hEnemy );
+				if ( relationship != R_FR || relationship != R_HT && !HasConditions( bits_COND_LIGHT_DAMAGE | bits_COND_HEAVY_DAMAGE ) )
+				{
+					// Don't go to combat if you're following the player
+					m_IdealMonsterState = MONSTERSTATE_ALERT;
+					return m_IdealMonsterState;
+				}
+			}
+		}
+		break;
+
+	case MONSTERSTATE_COMBAT:
+		{
+			CBaseEntity *pEnemy = m_hEnemy;
+			if ( pEnemy != NULL )
+			{
+				if ( DisregardEnemy( pEnemy ) )		// After 15 seconds of being hidden, return to alert
+				{
+					// Strip enemy when going to alert
+					m_IdealMonsterState = MONSTERSTATE_ALERT;
+					m_hEnemy = NULL;
+					return m_IdealMonsterState;
+				}
+				// Follow if only scared a little
+				if ( m_hTargetEnt != NULL )
+				{
+					m_IdealMonsterState = MONSTERSTATE_ALERT;
+					return m_IdealMonsterState;
+				}
+
+				if ( HasConditions ( bits_COND_SEE_ENEMY ) )
+				{
+					m_fearTime = gpGlobals->time;
+					m_IdealMonsterState = MONSTERSTATE_COMBAT;
+					return m_IdealMonsterState;
+				}
+
+			}
+		}
+		break;
+	}
+
+	return CTalkMonster::GetIdealState();
+}
+
+#endif
+

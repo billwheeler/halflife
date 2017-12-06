@@ -503,9 +503,10 @@ void ScorePanel::RebuildTeams()
 		if ( j > m_iNumTeams )
 		{ // they aren't in a listed team, so make a new one
 			// search through for an empty team slot
-			for ( int j = 1; j <= m_iNumTeams; j++ )
+			int k = 0;
+			for ( k = 1; k <= m_iNumTeams; k++ )
 			{
-				if ( g_TeamInfo[j].name[0] == '\0' )
+				if ( g_TeamInfo[k].name[0] == '\0' )
 					break;
 			}
 			m_iNumTeams = max( j, m_iNumTeams );

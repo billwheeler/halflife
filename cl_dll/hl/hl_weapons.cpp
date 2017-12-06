@@ -930,9 +930,11 @@ void HUD_WeaponsPostThink( local_state_s *from, local_state_s *to, usercmd_t *cm
 			 body = 0;
 
 		//Show laser sight/scope combo
+#if 0
 		if ( pWeapon == &g_Python && bIsMultiplayer() )
 			 body = 1;
-		
+#endif
+
 		// Force a fixed anim down to viewmodel
 		HUD_SendWeaponAnim( to->client.weaponanim, body, 1 );
 	}

@@ -3346,6 +3346,7 @@ void CGraph :: ComputeStaticRoutingTables( void )
 //
 void CGraph :: TestRoutingTables( void )
 {
+#if 0
 	int *pMyPath = new int[m_cNodes];
 	int *pMyPath2 = new int[m_cNodes];
 	if (pMyPath && pMyPath2)
@@ -3466,6 +3467,8 @@ EnoughSaid:
 	if (pMyPath2) delete pMyPath2;
 	pMyPath = 0;
 	pMyPath2 = 0;
+
+#endif
 }
 
 

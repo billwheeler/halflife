@@ -62,6 +62,7 @@ public:
 	BOOL CheckRangeAttack1 ( float flDot, float flDist ) { return FALSE; }
 	BOOL CheckRangeAttack2 ( float flDot, float flDist ) { return FALSE; }
 	int TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamageType );
+	void TraceAttack( entvars_t *pevAttacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType);
 };
 
 LINK_ENTITY_TO_CLASS( monster_zombie, CZombie );
@@ -345,4 +346,22 @@ int CZombie::IgnoreConditions ( void )
 
 	return iIgnore;
 	
+}
+
+//=========================================================
+// TraceAttack - checks to see if the zombie was shot in the head
+//=========================================================
+void CZombie :: TraceAttack( entvars_t *pevAttacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType)
+{
+     // headcrabs bleed yellow, humans bleed red
+     if (ptr->iHitgroup == HITGROUP_HEAD)
+     {
+          m_bloodColor = BLOOD_COLOR_YELLOW;
+     }
+     else
+     {
+          m_bloodColor = BLOOD_COLOR_RED;
+     }
+
+     CBaseMonster::TraceAttack( pevAttacker, flDamage, vecDir, ptr, bitsDamageType );
 }

@@ -75,6 +75,14 @@ void U_Srand( unsigned int seed )
 	glSeed = seed_table[ seed & 0xff ];
 }
 
+float RemapValClamped( float val, float A, float B, float C, float D )
+{
+	float cVal = (val - A) / (B - A);
+	cVal = clamp( cVal, 0.0f, 1.0f );
+
+	return C + (D - C) * cVal;
+}
+
 /*
 =====================
 UTIL_SharedRandomLong

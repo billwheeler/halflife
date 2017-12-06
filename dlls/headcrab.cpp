@@ -87,6 +87,7 @@ public:
 	void AlertSound( void );
 	void PrescheduleThink( void );
 	int  Classify ( void );
+	int  IRelationship( CBaseEntity *pTarget );
 	void HandleAnimEvent( MonsterEvent_t *pEvent );
 	BOOL CheckRangeAttack1 ( float flDot, float flDist );
 	BOOL CheckRangeAttack2 ( float flDot, float flDist );
@@ -157,6 +158,21 @@ const char *CHeadCrab::pBiteSounds[] =
 int	CHeadCrab :: Classify ( void )
 {
 	return	CLASS_ALIEN_PREY;
+}
+
+int CHeadCrab :: IRelationship( CBaseEntity *pTarget )
+{
+	//FIXME: how do we determine if we're on Xen?
+	if ( g_psv_gravity->value == 800 )
+	{
+		if ( FClassnameIs( pTarget->pev, "monster_alien_slave" ) || FClassnameIs( pTarget->pev, "monster_vortigaunt" ) )
+		{
+			return R_FR;
+			//return R_DL;
+		}
+	}
+
+	return CBaseMonster::IRelationship( pTarget );
 }
 
 //=========================================================
@@ -426,6 +442,9 @@ BOOL CHeadCrab :: CheckRangeAttack2 ( float flDot, float flDist )
 
 int CHeadCrab :: TakeDamage( entvars_t *pevInflictor, entvars_t *pevAttacker, float flDamage, int bitsDamageType )
 {
+    if ( bitsDamageType & DMG_CLUB )
+        flDamage = pev->health;
+
 	// Don't take any acid damage -- BigMomma's mortar is acid
 	if ( bitsDamageType & DMG_ACID )
 		flDamage = 0;

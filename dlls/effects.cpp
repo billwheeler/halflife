@@ -2140,6 +2140,79 @@ void CEnvFunnel::Spawn( void )
 	pev->effects = EF_NODRAW;
 }
 
+
+
+//==================================================================
+// Xen warp-in effect, recreation of Gearbox's simplifications
+//==================================================================
+class CEnvWarpBall : public CBaseEntity
+{
+public:
+	void	Precache( void );
+	void	Spawn( void ) { Precache(); }
+	void	Think( void );
+	void	Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value );
+	virtual int	ObjectCaps( void ) { return CBaseEntity :: ObjectCaps() & ~FCAP_ACROSS_TRANSITION; }
+};
+
+LINK_ENTITY_TO_CLASS( env_warpball, CEnvWarpBall );
+
+void CEnvWarpBall::Precache( void )
+{
+	PRECACHE_MODEL( "sprites/lgtning.spr" );
+	PRECACHE_MODEL( "sprites/Fexplo1.spr" );
+	PRECACHE_MODEL( "sprites/XFlare1.spr" );
+	PRECACHE_SOUND( "debris/beamstart2.wav" );
+	PRECACHE_SOUND( "debris/beamstart7.wav" );
+}
+
+void CEnvWarpBall::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
+{
+	int iTimes = 0;
+	int iDrawn = 0;
+	TraceResult tr;
+	Vector vecDest;
+	CBeam *pBeam;
+	while (iDrawn<pev->frags && iTimes<(pev->frags * 3)) // try to draw <frags> beams, but give up after 3x<frags> tries.
+	{
+		vecDest = pev->health * (Vector(RANDOM_FLOAT(-1,1), RANDOM_FLOAT(-1,1), RANDOM_FLOAT(-1,1)).Normalize());
+		UTIL_TraceLine( pev->origin, pev->origin + vecDest, ignore_monsters, NULL, &tr);
+		if (tr.flFraction != 1.0)
+		{
+			// we hit something.
+			iDrawn++;
+			pBeam = CBeam::BeamCreate("sprites/lgtning.spr",200);
+			pBeam->PointsInit( pev->origin, tr.vecEndPos );
+			pBeam->SetColor( 197, 243, 169 );
+			pBeam->SetNoise( 65 );
+			pBeam->SetBrightness( 150 );
+			pBeam->SetWidth( 18 );
+			pBeam->SetScrollRate( 35 );
+			pBeam->SetThink(&CBeam:: SUB_Remove );
+			pBeam->pev->nextthink = gpGlobals->time + 1.0;
+		}
+		iTimes++;
+	}
+	EMIT_SOUND( edict(), CHAN_BODY, "debris/beamstart2.wav", 1, ATTN_NORM );
+
+	CSprite *pSpr = CSprite::SpriteCreate( "sprites/Fexplo1.spr", pev->origin, TRUE );
+	pSpr->AnimateAndDie( 10 );
+	pSpr->SetTransparency(kRenderGlow,  77, 210, 130,  255, kRenderFxNoDissipation);
+
+	pSpr = CSprite::SpriteCreate( "sprites/XFlare1.spr", pev->origin, TRUE );
+	pSpr->AnimateAndDie( 10 );
+	pSpr->SetTransparency(kRenderGlow,  184, 250, 214,  255, kRenderFxNoDissipation);
+
+	pev->nextthink = gpGlobals->time + 0.5;
+}
+
+void CEnvWarpBall::Think( void )
+{
+	EMIT_SOUND( edict(), CHAN_ITEM, "debris/beamstart7.wav", 1, ATTN_NORM );
+	SUB_UseTargets( this, USE_TOGGLE, 0);
+}
+
+
 //=========================================================
 // Beverage Dispenser
 // overloaded pev->frags, is now a flag for whether or not a can is stuck in the dispenser. 

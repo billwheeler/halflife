@@ -29,6 +29,7 @@
 #include "animation.h"
 #include "weapons.h"
 #include "func_break.h"
+#include "../engine/studio.h"
 
 extern DLL_GLOBAL Vector		g_vecAttackDir;
 extern DLL_GLOBAL int			g_iSkillLevel;
@@ -124,18 +125,18 @@ void CGib :: SpawnStickyGibs( entvars_t *pevVictim, Vector vecOrigin, int cGibs 
 
 void CGib :: SpawnHeadGib( entvars_t *pevVictim )
 {
+	if ( g_Language == LANGUAGE_GERMAN )
+		SpawnHeadGib(pevVictim, "models/germangibs.mdl" );// throw one head
+	else
+		SpawnHeadGib(pevVictim, "models/hgibs.mdl" );
+}
+
+void CGib :: SpawnHeadGib( entvars_t *pevVictim, const char* szGibModel )
+{
 	CGib *pGib = GetClassPtr( (CGib *)NULL );
 
-	if ( g_Language == LANGUAGE_GERMAN )
-	{
-		pGib->Spawn( "models/germangibs.mdl" );// throw one head
-		pGib->pev->body = 0;
-	}
-	else
-	{
-		pGib->Spawn( "models/hgibs.mdl" );// throw one head
-		pGib->pev->body = 0;
-	}
+	pGib->Spawn( szGibModel );// throw one head
+	pGib->pev->body = 0;
 
 	if ( pevVictim )
 	{
@@ -182,32 +183,42 @@ void CGib :: SpawnHeadGib( entvars_t *pevVictim )
 
 void CGib :: SpawnRandomGibs( entvars_t *pevVictim, int cGibs, int human )
 {
-	int cSplat;
+	if ( g_Language == LANGUAGE_GERMAN )
+		SpawnRandomGibs(pevVictim, cGibs, 1, "models/germangibs.mdl");
+	else if (human)
+		SpawnRandomGibs(pevVictim, cGibs, 1, "models/hgibs.mdl");
+	else
+		SpawnRandomGibs(pevVictim, cGibs, 0, "models/agibs.mdl");
+}
 
-	for ( cSplat = 0 ; cSplat < cGibs ; cSplat++ )
+//support custom gib models
+void CGib :: SpawnRandomGibs( entvars_t *pevVictim, int cGibs, int notfirst, const char *szGibModel )
+{
+	if (cGibs == 0) return; // spawn nothing!
+
+	CGib *pGib = GetClassPtr( (CGib *)NULL );
+	pGib->Spawn( szGibModel );
+
+	//LRC - check the model itself to find out how many gibs are available
+	studiohdr_t *pstudiohdr = (studiohdr_t *)(GET_MODEL_PTR( ENT(pGib->pev) ));
+	if (! pstudiohdr)
+		return;
+
+	mstudiobodyparts_t *pbodypart = (mstudiobodyparts_t *)((byte *)pstudiohdr + pstudiohdr->bodypartindex);
+	//ALERT(at_console, "read %d bodyparts, canonical is %d\n", pbodypart->nummodels, HUMAN_GIB_COUNT);
+
+	for (int cSplat = 0 ; cSplat < cGibs ; cSplat++ )
 	{
-		CGib *pGib = GetClassPtr( (CGib *)NULL );
+		if (pGib == NULL) // first time through, we set pGib before the loop started
+		{
+			pGib = GetClassPtr( (CGib *)NULL );
+			pGib->Spawn( szGibModel );
+		}
 
-		if ( g_Language == LANGUAGE_GERMAN )
-		{
-			pGib->Spawn( "models/germangibs.mdl" );
-			pGib->pev->body = RANDOM_LONG(0,GERMAN_GIB_COUNT-1);
-		}
+		if (notfirst)
+			pGib->pev->body = RANDOM_LONG(1, pbodypart->nummodels - 1);// start at one to avoid throwing random amounts of skulls (0th gib)
 		else
-		{
-			if ( human )
-			{
-				// human pieces
-				pGib->Spawn( "models/hgibs.mdl" );
-				pGib->pev->body = RANDOM_LONG(1,HUMAN_GIB_COUNT-1);// start at one to avoid throwing random amounts of skulls (0th gib)
-			}
-			else
-			{
-				// aliens
-				pGib->Spawn( "models/agibs.mdl" );
-				pGib->pev->body = RANDOM_LONG(0,ALIEN_GIB_COUNT-1);
-			}
-		}
+			pGib->pev->body = RANDOM_LONG(0, pbodypart->nummodels - 1);
 
 		if ( pevVictim )
 		{
@@ -304,11 +315,21 @@ void CBaseMonster :: GibMonster( void )
 {
 	TraceResult	tr;
 	BOOL		gibbed = FALSE;
+	int			iszCustomGibs;
 
 	EMIT_SOUND(ENT(pev), CHAN_WEAPON, "common/bodysplat.wav", 1, ATTN_NORM);		
 
+	if ( iszCustomGibs = HasCustomGibs() )
+	{
+		if ( CVAR_GET_FLOAT("violence_hgibs") != 0 )
+		{
+			CGib::SpawnHeadGib( pev, STRING(iszCustomGibs) );
+			CGib::SpawnRandomGibs( pev, 4, 1, STRING(iszCustomGibs) );
+		}
+		gibbed = TRUE;
+	}
 	// only humans throw skulls !!!UNDONE - eventually monsters will have their own sets of gibs
-	if ( HasHumanGibs() )
+	else if ( HasHumanGibs() )
 	{
 		if ( CVAR_GET_FLOAT("violence_hgibs") != 0 )	// Only the player will ever get here
 		{
@@ -1371,6 +1392,10 @@ This version is used by Monsters.
 */
 void CBaseEntity::FireBullets(ULONG cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq, int iDamage, entvars_t *pevAttacker )
 {
+	flDistance = 16384;
+	if( iTracerFreq > 0 )
+		iTracerFreq = 1;
+
 	static int tracerCount;
 	int tracer;
 	TraceResult tr;
@@ -1505,6 +1530,10 @@ This version is used by Players, uses the random seed generator to sync client a
 */
 Vector CBaseEntity::FireBulletsPlayer ( ULONG cShots, Vector vecSrc, Vector vecDirShooting, Vector vecSpread, float flDistance, int iBulletType, int iTracerFreq, int iDamage, entvars_t *pevAttacker, int shared_rand )
 {
+	flDistance = 16384;
+	if( iTracerFreq > 0 )
+		iTracerFreq = 1;
+
 	static int tracerCount;
 	TraceResult tr;
 	Vector vecRight = gpGlobals->v_right;
@@ -1525,9 +1554,7 @@ Vector CBaseEntity::FireBulletsPlayer ( ULONG cShots, Vector vecSrc, Vector vecD
 		y = UTIL_SharedRandomFloat( shared_rand + ( 2 + iShot ), -0.5, 0.5 ) + UTIL_SharedRandomFloat( shared_rand + ( 3 + iShot ), -0.5, 0.5 );
 		z = x * x + y * y;
 
-		Vector vecDir = vecDirShooting +
-						x * vecSpread.x * vecRight +
-						y * vecSpread.y * vecUp;
+		Vector vecDir = vecDirShooting + (x * vecSpread.x * vecRight) + (y * vecSpread.y * vecUp);
 		Vector vecEnd;
 
 		vecEnd = vecSrc + vecDir * flDistance;

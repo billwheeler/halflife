@@ -435,12 +435,13 @@ void CSquadMonster :: StartMonster( void )
 		  ALERT ( at_aiconsole, "Squad of %d %s formed\n", iSquadSize, STRING( pev->classname ) );
 		}
 
+#if 0
 		if ( IsLeader() && FClassnameIs ( pev, "monster_human_grunt" ) )
 		{
 			SetBodygroup( 1, 1 ); // UNDONE: truly ugly hack
 			pev->skin = 0;
 		}
-
+#endif
 	}
 }
 

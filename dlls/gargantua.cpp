@@ -208,6 +208,8 @@ public:
 	void TraceAttack( entvars_t *pevAttacker, float flDamage, Vector vecDir, TraceResult *ptr, int bitsDamageType );
 	void HandleAnimEvent( MonsterEvent_t *pEvent );
 
+	int IRelationship ( CBaseEntity *pTarget );
+
 	BOOL CheckMeleeAttack1( float flDot, float flDist );		// Swipe
 	BOOL CheckMeleeAttack2( float flDot, float flDist );		// Flames
 	BOOL CheckRangeAttack1( float flDot, float flDist );		// Stomp attack
@@ -711,6 +713,21 @@ void CGargantua :: PrescheduleThink( void )
 int	CGargantua :: Classify ( void )
 {
 	return	CLASS_ALIEN_MONSTER;
+}
+
+
+//=========================================================
+// IRelationship - overridden because Human Grunts are 
+// Alien Grunt's nemesis.
+//=========================================================
+int CGargantua::IRelationship ( CBaseEntity *pTarget )
+{
+	if ( FClassnameIs( pTarget->pev, "monster_human_grunt" ) )
+	{
+		return R_NM;
+	}
+
+	return CBaseMonster::IRelationship( pTarget );
 }
 
 //=========================================================

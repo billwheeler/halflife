@@ -25,6 +25,7 @@
 #include	"effects.h"
 #include	"weapons.h"
 #include	"soundent.h"
+#include    "game.h"		// for g_psv_gravity
 
 extern DLL_GLOBAL int		g_iSkillLevel;
 
@@ -153,9 +154,23 @@ int	CISlave :: Classify ( void )
 
 int CISlave::IRelationship( CBaseEntity *pTarget )
 {
-	if ( (pTarget->IsPlayer()) )
+	//FIXME: how do we determine if we're on Xen?
+	if ( g_psv_gravity->value == 800 )
+	{
+		if ( FClassnameIs( pTarget->pev, "monster_headcrab" ) )
+		{
+			return R_DL;
+		}
+	}
+
+	if ( ( pTarget->IsPlayer() ) )
+	{
 		if ( (pev->spawnflags & SF_MONSTER_WAIT_UNTIL_PROVOKED ) && ! (m_afMemory & bits_MEMORY_PROVOKED ))
+		{
 			return R_NO;
+		}
+	}
+
 	return CBaseMonster::IRelationship( pTarget );
 }
 

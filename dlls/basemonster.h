@@ -296,6 +296,7 @@ public:
 	virtual void GibMonster( void );
 	BOOL		 ShouldGibMonster( int iGib );
 	void		 CallGibMonster( void );
+	virtual int		HasCustomGibs( void ) { return FALSE; } //monster_generic can specify it's own gibs
 	virtual BOOL	HasHumanGibs( void );
 	virtual BOOL	HasAlienGibs( void );
 	virtual void	FadeMonster( void );	// Called instead of GibMonster() when gibs are disabled

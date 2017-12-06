@@ -35,10 +35,15 @@
 #define		BARNEY_AE_DRAW		( 2 )
 #define		BARNEY_AE_SHOOT		( 3 )
 #define		BARNEY_AE_HOLSTER	( 4 )
+#define		BARNEY_AE_RELOAD	( 5 )
 
 #define	BARNEY_BODY_GUNHOLSTERED	0
 #define	BARNEY_BODY_GUNDRAWN		1
 #define BARNEY_BODY_GUNGONE			2
+
+#define	BARNEY_CLIP_SIZE			GLOCK_MAX_CLIP
+
+#define BARNEY_CAN_RELOAD 1
 
 class CBarney : public CTalkMonster
 {
@@ -50,6 +55,7 @@ public:
 	void BarneyFirePistol( void );
 	void AlertSound( void );
 	int  Classify ( void );
+	void CheckAmmo( void );
 	void HandleAnimEvent( MonsterEvent_t *pEvent );
 	
 	void RunTask( Task_t *pTask );
@@ -81,6 +87,7 @@ public:
 	float	m_painTime;
 	float	m_checkAttackTime;
 	BOOL	m_lastAttackCheck;
+	int		m_cClipSize;
 
 	// UNDONE: What is this for?  It isn't used?
 	float	m_flPlayerDamage;// how much pain has the player inflicted on me?
@@ -97,6 +104,7 @@ TYPEDESCRIPTION	CBarney::m_SaveData[] =
 	DEFINE_FIELD( CBarney, m_checkAttackTime, FIELD_TIME ),
 	DEFINE_FIELD( CBarney, m_lastAttackCheck, FIELD_BOOLEAN ),
 	DEFINE_FIELD( CBarney, m_flPlayerDamage, FIELD_FLOAT ),
+	DEFINE_FIELD( CBarney, m_cClipSize, FIELD_INTEGER ),
 };
 
 IMPLEMENT_SAVERESTORE( CBarney, CTalkMonster );
@@ -217,7 +225,16 @@ IMPLEMENT_CUSTOM_SCHEDULES( CBarney, CTalkMonster );
 
 void CBarney :: StartTask( Task_t *pTask )
 {
-	CTalkMonster::StartTask( pTask );	
+	switch ( pTask->iTask )
+	{
+	case TASK_RELOAD:
+		m_IdealActivity = ACT_RELOAD;
+		break;
+
+	default: 
+		CTalkMonster::StartTask( pTask );
+		break;
+	}
 }
 
 void CBarney :: RunTask( Task_t *pTask )
@@ -262,6 +279,18 @@ int CBarney :: ISoundMask ( void)
 int	CBarney :: Classify ( void )
 {
 	return	CLASS_PLAYER_ALLY;
+}
+
+//=========================================================
+// CheckAmmo - overridden for barney because he actually
+// uses ammo! (base class doesn't)
+//=========================================================
+void CBarney :: CheckAmmo ( void )
+{
+	if ( m_cAmmoLoaded <= 0 )
+	{
+		SetConditions(bits_COND_NO_AMMO_LOADED);
+	}
 }
 
 //=========================================================
@@ -366,7 +395,9 @@ void CBarney :: BarneyFirePistol ( void )
 	CSoundEnt::InsertSound ( bits_SOUND_COMBAT, pev->origin, 384, 0.3 );
 
 	// UNDONE: Reload?
-	m_cAmmoLoaded--;// take away a bullet!
+#if BARNEY_CAN_RELOAD
+	m_cAmmoLoaded--;	// take away a bullet!
+#endif
 }
 		
 //=========================================================
@@ -393,6 +424,12 @@ void CBarney :: HandleAnimEvent( MonsterEvent_t *pEvent )
 		// change bodygroup to replace gun in holster
 		pev->body = BARNEY_BODY_GUNHOLSTERED;
 		m_fGunDrawn = FALSE;
+		break;
+
+	case BARNEY_AE_RELOAD:
+		EMIT_SOUND( ENT(pev), CHAN_WEAPON, "weapons/sliderack.wav", 1, ATTN_NORM );	//FIXME
+		m_cAmmoLoaded = m_cClipSize;
+		ClearConditions(bits_COND_NO_AMMO_LOADED);
 		break;
 
 	default:
@@ -422,6 +459,9 @@ void CBarney :: Spawn()
 	m_fGunDrawn			= FALSE;
 
 	m_afCapability		= bits_CAP_HEAR | bits_CAP_TURN_HEAD | bits_CAP_DOORS_GROUP;
+
+	m_cClipSize         = BARNEY_CLIP_SIZE;
+	m_cAmmoLoaded		= m_cClipSize;
 
 	MonsterInit();
 	SetUse( &CBarney::FollowerUse );
@@ -645,6 +685,9 @@ Schedule_t* CBarney :: GetScheduleOfType ( int Type )
 		}
 		break;
 
+	case SCHED_RELOAD:
+		break;
+
 	// Hook these to make a looping schedule
 	case SCHED_TARGET_FACE:
 		// call base class default so that barney will talk
@@ -696,6 +739,10 @@ Schedule_t *CBarney :: GetSchedule ( void )
 	if ( HasConditions( bits_COND_ENEMY_DEAD ) && FOkToSpeak() )
 	{
 		PlaySentence( "BA_KILL", 4, VOL_NORM, ATTN_NORM );
+	}
+	if ( HasConditions ( bits_COND_NO_AMMO_LOADED ) )
+	{
+		return GetScheduleOfType( SCHED_RELOAD );
 	}
 
 	switch( m_MonsterState )

@@ -32,6 +32,8 @@ extern globalvars_t				*gpGlobals;
 #define STRING(offset)		((const char *)(gpGlobals->pStringBase + (unsigned int)(offset)))
 #define MAKE_STRING(str)	((uint64)(str) - (uint64)(STRING(0)))
 
+#define clamp(val, min, max) (((val) > (max)) ? (max) : (((val) < (min)) ? (min) : (val)))
+
 inline edict_t *FIND_ENTITY_BY_CLASSNAME(edict_t *entStart, const char *pszName) 
 {
 	return FIND_ENTITY_BY_STRING(entStart, "classname", pszName);
@@ -347,6 +349,7 @@ extern void UTIL_StripToken( const char *pKey, char *pDest );// for redundant ke
 extern void SetMovedir(entvars_t* pev);
 extern Vector VecBModelOrigin( entvars_t* pevBModel );
 extern int BuildChangeList( LEVELLIST *pLevelList, int maxList );
+extern float RemapValClamped( float val, float A, float B, float C, float D );
 
 //
 // How did I ever live without ASSERT?

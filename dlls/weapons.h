@@ -88,12 +88,14 @@ public:
 
 #define MAX_NORMAL_BATTERY	100
 
+#define SHOW_IDLES 0
+
 
 // weapon weight factors (for auto-switching)   (-1 = noswitch)
 #define CROWBAR_WEIGHT		0
 #define GLOCK_WEIGHT		10
-#define PYTHON_WEIGHT		15
-#define MP5_WEIGHT			15
+#define PYTHON_WEIGHT		10
+#define MP5_WEIGHT			10
 #define SHOTGUN_WEIGHT		15
 #define CROSSBOW_WEIGHT		10
 #define RPG_WEIGHT			20
@@ -108,7 +110,7 @@ public:
 
 // weapon clip/carry ammo capacities
 #define URANIUM_MAX_CARRY		100
-#define	_9MM_MAX_CARRY			250
+#define	_9MM_MAX_CARRY			240
 #define _357_MAX_CARRY			36
 #define BUCKSHOT_MAX_CARRY		125
 #define BOLT_MAX_CARRY			50
@@ -124,10 +126,10 @@ public:
 #define WEAPON_NOCLIP			-1
 
 //#define CROWBAR_MAX_CLIP		WEAPON_NOCLIP
-#define GLOCK_MAX_CLIP			17
+#define GLOCK_MAX_CLIP			15
 #define PYTHON_MAX_CLIP			6
-#define MP5_MAX_CLIP			50
-#define MP5_DEFAULT_AMMO		25
+#define MP5_MAX_CLIP			30
+//#define MP5_DEFAULT_AMMO		15
 #define SHOTGUN_MAX_CLIP		8
 #define CROSSBOW_MAX_CLIP		5
 #define RPG_MAX_CLIP			1
@@ -141,12 +143,12 @@ public:
 
 
 // the default amount of ammo that comes with each gun when it spawns
-#define GLOCK_DEFAULT_GIVE			17
+#define GLOCK_DEFAULT_GIVE			15
 #define PYTHON_DEFAULT_GIVE			6
-#define MP5_DEFAULT_GIVE			25
-#define MP5_DEFAULT_AMMO			25
+#define MP5_DEFAULT_GIVE			15
+#define MP5_DEFAULT_AMMO			30
 #define MP5_M203_DEFAULT_GIVE		0
-#define SHOTGUN_DEFAULT_GIVE		12
+#define SHOTGUN_DEFAULT_GIVE		8
 #define CROSSBOW_DEFAULT_GIVE		5
 #define RPG_DEFAULT_GIVE			1
 #define GAUSS_DEFAULT_GIVE			20
@@ -164,7 +166,7 @@ public:
 #define AMMO_MP5CLIP_GIVE		MP5_MAX_CLIP
 #define AMMO_CHAINBOX_GIVE		200
 #define AMMO_M203BOX_GIVE		2
-#define AMMO_BUCKSHOTBOX_GIVE	12
+#define AMMO_BUCKSHOTBOX_GIVE	8
 #define AMMO_CROSSBOWCLIP_GIVE	CROSSBOW_MAX_CLIP
 #define AMMO_RPGCLIP_GIVE		RPG_MAX_CLIP
 #define AMMO_URANIUMBOX_GIVE	20
@@ -417,8 +419,11 @@ extern MULTIDAMAGE gMultiDamage;
 
 #define	WEAPON_ACTIVITY_VOLUME	64
 
+#define VECTOR_CONE_P2DEGREES	Vector( 0.00175, 0.00175, 0.00175 )
 #define VECTOR_CONE_1DEGREES	Vector( 0.00873, 0.00873, 0.00873 )
+#define VECTOR_CONE_1P5DEGREES  Vector( 0.01309, 0.01309, 0.01309 )
 #define VECTOR_CONE_2DEGREES	Vector( 0.01745, 0.01745, 0.01745 )
+#define VECTOR_CONE_2P5DEGREES  Vector( 0.02182, 0.02182, 0.02182 )
 #define VECTOR_CONE_3DEGREES	Vector( 0.02618, 0.02618, 0.02618 )
 #define VECTOR_CONE_4DEGREES	Vector( 0.03490, 0.03490, 0.03490 )
 #define VECTOR_CONE_5DEGREES	Vector( 0.04362, 0.04362, 0.04362 )
@@ -477,7 +482,7 @@ public:
 
 	void PrimaryAttack( void );
 	void SecondaryAttack( void );
-	void GlockFire( float flSpread, float flCycleTime, BOOL fUseAutoAim );
+	void GlockFire( Vector &spread, float flCycleTime, BOOL fUseAutoAim );
 	BOOL Deploy( void );
 	void Reload( void );
 	void WeaponIdle( void );

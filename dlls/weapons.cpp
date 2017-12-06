@@ -318,6 +318,12 @@ void W_Precache(void)
 	UTIL_PrecacheOther( "item_security" );
 	UTIL_PrecacheOther( "item_longjump" );
 
+	//blue shift
+#if BLUE_SHIFT 
+    UTIL_PrecacheOther( "item_armorvest" );
+    UTIL_PrecacheOther( "item_helmet" );
+#endif
+
 	// shotgun
 	UTIL_PrecacheOtherWeapon( "weapon_shotgun" );
 	UTIL_PrecacheOther( "ammo_buckshot" );
