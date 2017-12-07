@@ -323,8 +323,8 @@ Vector CBaseEntity::FireBulletsPlayer ( ULONG cShots, Vector vecSrc, Vector vecD
 		}
 		else
 		{
-			x = UTIL_SharedRandomFloat( shared_rand + iShot, -0.5, 0.5 ) * flatness + UTIL_SharedRandomFloat( shared_rand + ( 1 + iShot ) , -0.5, 0.5 ) * (1 - flatness);
-			y = UTIL_SharedRandomFloat( shared_rand + ( 2 + iShot ), -0.5, 0.5 ) * flatness + UTIL_SharedRandomFloat( shared_rand + ( 3 + iShot ), -0.5, 0.5 ) * (1 - flatness);
+			x = UTIL_SharedRandomFloat( shared_rand + iShot, -1, 1 ) * flatness + UTIL_SharedRandomFloat( shared_rand + ( 1 + iShot ) , -1, 1 ) * (1 - flatness);
+			y = UTIL_SharedRandomFloat( shared_rand + ( 2 + iShot ), -1, 1 ) * flatness + UTIL_SharedRandomFloat( shared_rand + ( 3 + iShot ), -1, 1 ) * (1 - flatness);
 			if ( bias < 0 )
 			{
 				x = ( x >= 0 ) ? 1.0 - x : -1.0 - x;

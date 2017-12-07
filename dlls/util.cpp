@@ -1699,8 +1699,8 @@ Vector UTIL_BulletSpread(const Vector &vecDirShooting, const Vector &vecSpread, 
 
 	float flatness = ( fabsf(bias) * 0.5 );
 
-	x = UTIL_SharedRandomFloat( seed + shotNum, -0.5, 0.5 ) * flatness + UTIL_SharedRandomFloat( seed + ( 1 + shotNum ) , -0.5, 0.5 ) * (1 - flatness);
-	y = UTIL_SharedRandomFloat( seed + ( 2 + shotNum ), -0.5, 0.5 ) * flatness + UTIL_SharedRandomFloat( seed + ( 3 + shotNum ), -0.5, 0.5 ) * (1 - flatness);
+	x = UTIL_SharedRandomFloat( seed + shotNum, -1, 1 ) * flatness + UTIL_SharedRandomFloat( seed + ( 1 + shotNum ) , -1, 1 ) * (1 - flatness);
+	y = UTIL_SharedRandomFloat( seed + ( 2 + shotNum ), -1, 1 ) * flatness + UTIL_SharedRandomFloat( seed + ( 3 + shotNum ), -1, 1 ) * (1 - flatness);
 	if ( bias < 0 )
 	{
 		x = ( x >= 0 ) ? 1.0 - x : -1.0 - x;
